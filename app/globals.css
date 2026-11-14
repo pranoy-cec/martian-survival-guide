@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mars-bg: #0b0c10;
+  --mars-panel: #141212;
+  --mars-border: #382822;
+  --mars-orange: #f4a261;
+  --mars-red: #c1440e;
+  --mars-cyan: #00f0ff;
+}
+
+body {
+  background-color: var(--mars-bg);
+  color: #e2e8f0;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+}
+
+/* Custom aerospace HUD scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111010;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3b2c26;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c1440e;
+}
+
+/* Leaflet dark/Mars theme tweaks */
+.leaflet-container {
+  background-color: #0b0c10 !important;
+  font-family: inherit;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid #382822 !important;
+  background: #151313 !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+  background-color: #1a1615 !important;
+  color: #e2e8f0 !important;
+  border-bottom: 1px solid #382822 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #c1440e !important;
+  color: #ffffff !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #181413 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #e76f51 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(231, 111, 81, 0.25) !important;
+}
+
+.leaflet-popup-tip {
+  background: #181413 !important;
+  border: 1px solid #e76f51 !important;
+}
+
+/* Subtle aerospace grid pattern */
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(193, 68, 14, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glow effects */
+.glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.glow-orange {
+  text-shadow: 0 0 10px rgba(244, 162, 97, 0.5);
+}
+
+.glow-red {
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
