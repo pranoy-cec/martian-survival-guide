@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { PLANETARY_DATASETS } from '@/lib/data/datasets';
+import { apiSuccess } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,14 +19,13 @@ export async function GET(request: NextRequest) {
     filtered = filtered.filter(d => d.mission.toLowerCase().includes(mission.toLowerCase()));
   }
 
-  return NextResponse.json({
-    success: true,
+  return apiSuccess({
     count: filtered.length,
-    datasets: filtered,
-    metadata: {
-      standardDatum: 'Mars MOLA Areoid Equipotential Surface (Radius 3396.0 km)',
-      cartographicAuthority: 'IAU/IAG Working Group on Cartographic Coordinates and Rotational Elements',
-      updated: '2026-Mission-Epoch'
-    }
+    datasets: filtered
+  }, {
+    source: 'NASA Planetary Data System (PDS) & USGS Astrogeology Registry',
+    crs: 'Mars MOLA Areoid Surface Datum (Radius 3396.0 km)',
+    cartographicAuthority: 'IAU/IAG Working Group on Cartographic Coordinates and Rotational Elements',
+    limitations: 'All 8 planetary datasets cataloged with peer-reviewed mission references.'
   });
 }

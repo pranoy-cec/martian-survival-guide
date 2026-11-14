@@ -56,7 +56,7 @@ export type SciencePOI = {
   };
 };
 
-export type RouteType = 'SAFE' | 'SCIENTIFIC' | 'BALANCED';
+export type RouteType = 'SAFE' | 'SCIENTIFIC' | 'BALANCED' | 'GEOMETRIC';
 
 export type RouteWaypoint = {
   id: string;

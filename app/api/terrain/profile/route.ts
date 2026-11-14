@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ProfileQuerySchema } from '@/lib/validation';
-import { getNumericalElevation, analyzeTerrainAtCoordinate, calculateMartianDistanceKm } from '@/lib/engine/elevationModel';
+import { analyzeTerrainAtCoordinate, calculateMartianDistanceKm } from '@/lib/engine/elevationModel';
+import { apiSuccess, apiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +11,7 @@ export async function POST(request: NextRequest) {
     const parsed = ProfileQuerySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid profile request format', details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError('Invalid profile request format', parsed.error.format(), 400);
     }
 
     const { start, destination, steps } = parsed.data;
@@ -57,19 +55,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      meta: {
-        totalDistanceKm: Math.round(totalDistKm * 100) / 100,
-        elevationGainMeters: Math.round(elevGain),
-        elevationLossMeters: Math.round(elevLoss),
-        maxSlopeDeg: maxSlope,
-        datum: 'NASA MOLA MEGDR Mars Areoid Datum',
-        dataSource: 'Mars Orbiter Laser Altimeter 128 pix/deg Altimetry'
-      },
+    return apiSuccess({
+      totalDistanceKm: Math.round(totalDistKm * 100) / 100,
+      elevationGainMeters: Math.round(elevGain),
+      elevationLossMeters: Math.round(elevLoss),
+      maxSlopeDeg: maxSlope,
+      stepsCount: profilePoints.length,
       profile: profilePoints
+    }, {
+      source: 'MGS MOLA (Mars Orbiter Laser Altimeter) 128 pix/deg MEGDR Altimetry',
+      crs: 'NASA MOLA MEGDR Mars Areoid Datum',
+      nature: 'DERIVED_ANALYTICAL',
+      limitations: 'Calculated along great-circle corridor; slope sampled at intermediate nodes.'
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Profile computation error' }, { status: 500 });
+    return apiError(error.message || 'Profile computation error', null, 500);
   }
 }

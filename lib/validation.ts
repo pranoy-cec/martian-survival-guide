@@ -68,7 +68,7 @@ export const MissionReportRequestSchema = z.object({
   start: MarsCoordinateSchema,
   destination: MarsCoordinateSchema,
   routeId: z.string(),
-  routeType: z.enum(['SAFE', 'SCIENTIFIC', 'BALANCED']),
+  routeType: z.enum(['SAFE', 'SCIENTIFIC', 'BALANCED', 'GEOMETRIC']),
   metrics: z.object({
     distanceKm: z.number(),
     durationHours: z.number(),

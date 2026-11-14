@@ -1,69 +1,55 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { analyzeTerrainAtCoordinate, getNumericalElevation } from '@/lib/engine/elevationModel';
-import { MarsCoordinate } from '@/lib/types';
+import { NextRequest } from 'next/server';
+import { analyzeTerrainAtCoordinate } from '@/lib/engine/elevationModel';
+import { TerrainQuerySchema, BatchTerrainQuerySchema } from '@/lib/validation';
+import { apiSuccess, apiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const latParam = searchParams.get('lat');
-    const lonParam = searchParams.get('lon');
+    const searchParams = Object.fromEntries(request.nextUrl.searchParams);
+    const parsed = TerrainQuerySchema.safeParse(searchParams);
 
-    if (latParam === null || lonParam === null) {
-      return NextResponse.json(
-        { error: 'Missing mandatory coordinates: "lat" and "lon" query parameters are required.' },
-        { status: 400 }
-      );
+    if (!parsed.success) {
+      return apiError('Missing or invalid "lat" and "lon" parameters.', parsed.error.format(), 400);
     }
 
-    const lat = parseFloat(latParam);
-    const lon = parseFloat(lonParam);
+    const { lat, lon } = parsed.data;
+    const analysis = analyzeTerrainAtCoordinate({ lat, lon });
 
-    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90) {
-      return NextResponse.json(
-        { error: 'Invalid coordinate bounds. Latitude must be between -90 and +90 degrees.' },
-        { status: 400 }
-      );
-    }
-
-    const coord: MarsCoordinate = { lat, lon };
-    const analysis = analyzeTerrainAtCoordinate(coord);
-
-    return NextResponse.json({
-      success: true,
-      data: analysis,
-      meta: {
-        datum: 'Mars MOLA Areoid Equipotential Elevation Datum (0m = 3396.0 km equatorial radius)',
-        timestamp: new Date().toISOString(),
-        missionInstruments: ['MGS MOLA (Mars Orbiter Laser Altimeter)', 'USGS SIM 3292 Geologic Map']
-      }
+    return apiSuccess(analysis, {
+      source: 'MGS MOLA (Mars Orbiter Laser Altimeter) MEGDR',
+      instrument: 'MOLA Laser Altimeter',
+      crs: 'Mars MOLA Areoid Equipotential Elevation Datum (0m = 3396.0 km equatorial radius)',
+      resolution: '463 meters/pixel',
+      nature: 'DERIVED_ANALYTICAL',
+      limitations: 'Calculated using numerical elevation differences; sub-pixel boulders require rover Hazcam validation.'
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Internal terrain analysis error' }, { status: 500 });
+    return apiError(error.message || 'Internal terrain analysis error', null, 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const coordinates: MarsCoordinate[] = body.coordinates;
+    const parsed = BatchTerrainQuerySchema.safeParse(body);
 
-    if (!Array.isArray(coordinates) || coordinates.length === 0) {
-      return NextResponse.json(
-        { error: 'Body must contain a non-empty "coordinates" array.' },
-        { status: 400 }
-      );
+    if (!parsed.success) {
+      return apiError('Body must contain a non-empty "coordinates" array.', parsed.error.format(), 400);
     }
 
-    const results = coordinates.slice(0, 100).map(coord => analyzeTerrainAtCoordinate(coord));
+    const results = parsed.data.coordinates.map(coord => analyzeTerrainAtCoordinate(coord));
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       count: results.length,
-      data: results
+      coordinates: results
+    }, {
+      source: 'MGS MOLA MEGDR Altimetry Grids',
+      crs: 'Mars MOLA Areoid Datum',
+      nature: 'DERIVED_ANALYTICAL'
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Batch terrain query error' }, { status: 500 });
+    return apiError(error.message || 'Batch terrain query error', null, 500);
   }
 }

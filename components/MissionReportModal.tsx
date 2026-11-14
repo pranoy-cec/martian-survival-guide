@@ -58,7 +58,8 @@ export const MissionReportModal: React.FC<MissionReportModalProps> = ({
 
       const json = await res.json();
       if (json.success) {
-        const blob = new Blob([JSON.stringify(json.report, null, 2)], { type: 'application/json' });
+        const reportContent = json.data || json.report;
+        const blob = new Blob([JSON.stringify(reportContent, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

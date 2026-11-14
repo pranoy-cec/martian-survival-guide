@@ -1,4 +1,4 @@
-import { MarsCoordinate, RouteOption, RouteWaypoint, MissionProfile, SciencePOI, HazardLevel } from '../types';
+import { MarsCoordinate, RouteOption, RouteWaypoint, MissionProfile, SciencePOI, HazardLevel, RouteType } from '../types';
 import { calculateMartianDistanceKm, analyzeTerrainAtCoordinate, getNumericalElevation } from './elevationModel';
 import { calculateSegmentMetabolicCost } from './metabolicModel';
 import { SCIENCE_POIS } from '../data/sciencePOIs';
@@ -55,14 +55,21 @@ export function generateOptimizedRoutes(
     confidence: profile.weights.confidence
   }, 'BALANCED', 'Balanced Expedition (Recommended)', 'Optimal equilibrium between astronaut life-support conservation, manageable terrain slopes, and high scientific sample yield.', profile);
 
-  return [balancedRoute, safeRoute, scientificRoute];
+  const geometricRoute = computeAStarRoute(startCoord, destCoord, {
+    safety: 0.0,
+    science: 0.0,
+    efficiency: 1.0,
+    confidence: 0.0
+  }, 'GEOMETRIC', 'Geometric Baseline (Un-optimized Straight Line)', 'Un-optimized direct Euclidean vector. Ignores all terrain hazards and slopes. Provided solely as a scientific baseline for comparison.', profile);
+
+  return [balancedRoute, safeRoute, scientificRoute, geometricRoute];
 }
 
 function computeAStarRoute(
   start: MarsCoordinate,
   dest: MarsCoordinate,
   weights: { safety: number; science: number; efficiency: number; confidence: number },
-  routeType: 'SAFE' | 'SCIENTIFIC' | 'BALANCED',
+  routeType: RouteType,
   title: string,
   description: string,
   profile: MissionProfile
@@ -243,6 +250,12 @@ function computeAStarRoute(
     disadvantages.push(`Encountered steep slopes (Max ${maxSlopeDeg}°), increasing oxygen burn`);
     disadvantages.push(`Higher life-support resource consumption (${totalOxygenLiters} L O2, ${totalKcal} kcal)`);
     recommendationReason = 'Optimal when rover-assisted with dual astronaut crew and primary objective is sample acquisition for Mars Sample Return.';
+  } else if (routeType === 'GEOMETRIC') {
+    advantages.push(`Shortest absolute geometric distance (${Math.round(cumulativeDistanceKm * 10) / 10} km)`);
+    advantages.push('Direct line-of-sight vector between departure and arrival points');
+    disadvantages.push(`WARNING: Blindly crosses steep slopes (${maxSlopeDeg}°) and high-roughness boulder fields`);
+    disadvantages.push('High probability of spacesuit tip, rollover, or wheel entrapment on crater scarps');
+    recommendationReason = 'NOT RECOMMENDED FOR ASTRONAUT TRAVERSAL. Serves strictly as a raw geometric baseline to quantify the hazard reduction achieved by A* optimization.';
   } else {
     advantages.push(`Well-calibrated resource profile: ${totalOxygenLiters} L O2 comfortably within standard 8-hour EVA margins`);
     advantages.push(`Captures prime science target without exceeding safety thresholds (Max ${maxSlopeDeg}°)`);

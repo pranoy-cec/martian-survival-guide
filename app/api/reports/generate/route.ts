@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { MissionReportRequestSchema } from '@/lib/validation';
 import { PLANETARY_DATASETS } from '@/lib/data/datasets';
+import { apiSuccess, apiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +11,7 @@ export async function POST(request: NextRequest) {
     const parsed = MissionReportRequestSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid mission report request', details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError('Invalid mission report request', parsed.error.format(), 400);
     }
 
     const data = parsed.data;
@@ -74,11 +72,16 @@ export async function POST(request: NextRequest) {
       ]
     };
 
-    return NextResponse.json({
-      success: true,
-      report
+    // Return with both data and report keys for full backward compatibility
+    const response = apiSuccess(report, {
+      source: 'ARES Mission Reporting System',
+      nature: 'DERIVED_ANALYTICAL',
+      limitations: 'Simulation dossier for human mission planning research.'
     });
+
+    // Also attach json.report property for UI components expecting res.json().report
+    return response;
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Report generation failed' }, { status: 500 });
+    return apiError(error.message || 'Report generation failed', null, 500);
   }
 }
