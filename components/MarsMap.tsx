@@ -136,9 +136,9 @@ export const MarsMap: React.FC<MarsMapProps> = ({
     if (layers.baseLayer === 'viking') {
       tileUrl = 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/{z}/{y}/{x}.jpg';
       maxNativeZoom = 7;
-    } else if (layers.baseLayer === 'themis_day') {
-      tileUrl = 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MO_THEMIS-IR-Day_mosaic_global_100m_v2/1.0.0//default/default028mm/{z}/{y}/{x}.jpg';
-      maxNativeZoom = 8;
+    } else if (layers.baseLayer === 'mola_gray') {
+      tileUrl = 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_Shade_merge_global_463m/1.0.0//default/default028mm/{z}/{y}/{x}.jpg';
+      maxNativeZoom = 7;
     } else {
       // Default: MOLA Color Shaded Relief
       tileUrl = 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0//default/default028mm/{z}/{y}/{x}.jpg';

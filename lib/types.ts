@@ -34,6 +34,35 @@ export type POICategory =
   | 'ROVER_WAYPOINT'
   | 'HISTORIC_LANDING_SITE';
 
+export type StratigraphicUnit = {
+  formationName: string;
+  epoch: 'Early Noachian' | 'Late Noachian' | 'Early Hesperian' | 'Late Hesperian' | 'Amazonian';
+  ageGa: number;
+  lithology: string;
+  layerThicknessM: number;
+  depositionalEnvironment: string;
+  sampleEvidence: string;
+};
+
+export type MineralSignature = {
+  name: string;
+  formula: string;
+  spectralCategory: 'Phyllosilicates' | 'Sulfates' | 'Carbonates' | 'Mafic Silicates' | 'Silica/Halides';
+  instrument: 'CRISM' | 'OMEGA' | 'SuperCam' | 'Sherloc' | 'CheMin';
+  abundanceLevel: 'DOMINANT' | 'ABUNDANT' | 'ACCESSORY' | 'TRACE';
+  scientificImplication: string;
+};
+
+export type CachedSampleTube = {
+  tubeId: string;
+  coreName: string;
+  sol: number;
+  rockType: string;
+  coreLengthMm: number;
+  sampleContext: string;
+  targetAstrobiologyScore: number; // 0 - 100
+};
+
 export type SciencePOI = {
   id: string;
   name: string;
@@ -164,6 +193,29 @@ export type EnvironmentalTelemetry = {
     speedMaxGustMPerS: number;
     directionDeg: number;
   };
+  // Detailed MEDA 6-Sensor Suite Telemetry
+  medaSensorSuite?: {
+    atsThermalGradientCPerM: number; // Air Temperature Sensors 1.45m vs 0.85m gradient
+    atsLevels: { sensor: string; heightM: number; tempC: number }[];
+    gtsSkinTempC: number; // Ground Temperature Sensor (IR radiometer)
+    gtsThermalInertiaJ: number; // J m^-2 K^-1 s^-1/2
+    psThermalTideAmplitudePa: number; // Barometric diurnal oscillation amplitude
+    psKelvinWaveDetected: boolean;
+    wsHorizontalVectorMPerS: number; // Wind Sensor 2-boom sonic vector
+    wsVerticalVectorMPerS: number;
+    wsSaltationActive: boolean; // Sand transport trigger (>15 m/s)
+    rdsTau880nm: number; // Radiation and Dust Sensor at 880 nm
+    rdsDiffuseRatio: number; // Diffuse to total solar irradiance fraction
+    hsRelativeHumidityPct: number; // Humidity Sensor RH %
+    hsWaterVaporPpmv: number; // Water vapor mixing ratio (ppmv)
+    hsFrostPointC: number; // Frost condensation point
+    hsFrostHazard: boolean;
+  };
+  atmosphericComposition?: {
+    gas: string;
+    percent: number;
+    hazardAlert?: string;
+  }[];
   provenance: {
     instrument: string;
     mission: string;
@@ -186,4 +238,27 @@ export type LandingSitePreset = {
   keyScienceGoals: string[];
   startPoint: MarsCoordinate;
   endPoint: MarsCoordinate;
+  // Comprehensive Science Dossier Fields
+  chronostratigraphy?: StratigraphicUnit[];
+  crismMineralogy?: MineralSignature[];
+  cachedSampleTubes?: CachedSampleTube[];
+  astrobiologyAssessment?: {
+    habitabilityGrade: 'A+' | 'A' | 'B+' | 'B' | 'C';
+    preservationWindow: string;
+    taphonomyNotes: string;
+    radiationDegradationDepthM: number;
+  };
+  geotechnicalProperties?: {
+    regolithBearingCapacityKPa: number;
+    soilInternalFrictionAngleDeg: number;
+    rockAbundancePercent: number;
+    wheelSlipHazardLevel: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+    meanThermalInertia: number;
+  };
+  pdsDataArchives?: {
+    archiveId: string;
+    instrument: string;
+    datasetTitle: string;
+    pdsVolumeUrl: string;
+  }[];
 };

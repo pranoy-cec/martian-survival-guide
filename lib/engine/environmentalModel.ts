@@ -104,6 +104,23 @@ export function getEnvironmentalTelemetry(
   const gustWind = Math.round((avgWind * 2.2 + 2.0) * 10) / 10;
   const windDir = Math.round((baseSol * 37 + martianHour * 15) % 360);
 
+  // Detailed MEDA 6-Sensor Suite Calculations
+  // ATS thermal boundary layer gradient: superadiabatic (~ -0.8 °C/m) during noon, inversion (+1.2 °C/m) at night
+  const thermalGradient = diurnalCycle > 0 ? -0.85 * diurnalCycle : 1.15 * Math.abs(diurnalCycle);
+  const ats1 = Math.round(currentTemp * 10) / 10;
+  const ats2 = Math.round((currentTemp - 0.2) * 10) / 10;
+  const ats3 = Math.round((currentTemp + thermalGradient * 0.6) * 10) / 10;
+  const ats4 = Math.round((currentTemp + thermalGradient * 0.6 - 0.3) * 10) / 10;
+  const ats5 = Math.round((currentTemp - thermalGradient * 0.55) * 10) / 10;
+
+  // Relative humidity: predawn peaks up to 55-70% when temp drops to -85°C, dries to 2-4% at midday
+  const relHumidity = Math.max(
+    2.1,
+    Math.round((35 - diurnalCycle * 32 + (coordinates.lat > 40 ? 20 : 0)) * 10) / 10
+  );
+  const frostPoint = -79.2; // Typical Mars frost condensation temperature
+  const frostActive = currentTemp <= frostPoint && relHumidity > 40;
+
   return {
     sol: baseSol,
     ls: Math.round(baseLs * 10) / 10,
@@ -139,6 +156,37 @@ export function getEnvironmentalTelemetry(
       speedMaxGustMPerS: gustWind,
       directionDeg: windDir
     },
+    medaSensorSuite: {
+      atsThermalGradientCPerM: Math.round(thermalGradient * 100) / 100,
+      atsLevels: [
+        { sensor: 'ATS-1 (Front Boom @ 1.45m)', heightM: 1.45, tempC: ats1 },
+        { sensor: 'ATS-2 (Rear Boom @ 1.45m)', heightM: 1.45, tempC: ats2 },
+        { sensor: 'ATS-3 (Front Lower @ 0.85m)', heightM: 0.85, tempC: ats3 },
+        { sensor: 'ATS-4 (Rear Lower @ 0.85m)', heightM: 0.85, tempC: ats4 },
+        { sensor: 'ATS-5 (RSM Mast Top @ 2.00m)', heightM: 2.0, tempC: ats5 }
+      ],
+      gtsSkinTempC: groundTemp,
+      gtsThermalInertiaJ: coordinates.lat > 40 ? 410 : 315, // Higher thermal inertia in ice-rich terrain
+      psThermalTideAmplitudePa: 36.8,
+      psKelvinWaveDetected: baseSol % 4 === 0,
+      wsHorizontalVectorMPerS: avgWind,
+      wsVerticalVectorMPerS: Math.round(Math.sin(martianHour) * 0.45 * 100) / 100,
+      wsSaltationActive: gustWind > 15.0,
+      rdsTau880nm: finalTau,
+      rdsDiffuseRatio: Math.round((0.28 + finalTau * 0.22) * 100) / 100,
+      hsRelativeHumidityPct: relHumidity,
+      hsWaterVaporPpmv: Math.round(45 + Math.sin(baseLs * 0.017) * 25),
+      hsFrostPointC: frostPoint,
+      hsFrostHazard: frostActive
+    },
+    atmosphericComposition: [
+      { gas: 'Carbon Dioxide (CO2)', percent: 95.32, hazardAlert: 'Hypercapnia Lethal Without Closed-Loop PLSS Life Support' },
+      { gas: 'Nitrogen (N2)', percent: 2.60, hazardAlert: 'Inert Buffer Gas' },
+      { gas: 'Argon-40 (Ar)', percent: 1.90, hazardAlert: 'Noble Gas Tracer' },
+      { gas: 'Oxygen (O2)', percent: 0.16, hazardAlert: 'Extreme Anoxia; Earth Sea-Level is 20.95%' },
+      { gas: 'Carbon Monoxide (CO)', percent: 0.08, hazardAlert: 'Photochemical Dissociation Product' },
+      { gas: 'Water Vapor (H2O)', percent: 0.03, hazardAlert: 'Diurnal Frost and Cloud Condensation Source' }
+    ],
     provenance: {
       instrument: instrumentName,
       mission: missionName,

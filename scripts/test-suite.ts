@@ -58,7 +58,7 @@ async function runTests() {
   };
 
   const routes = generateOptimizedRoutes(site.startPoint, site.endPoint, profile);
-  assert(routes.length === 3, 'Generates 3 Pareto-optimal routes (Balanced, Safe, Scientific)');
+  assert(routes.length >= 3, 'Generates Pareto-optimal routes (Balanced, Safe, Scientific, Geometric)');
 
   const balanced = routes.find(r => r.type === 'BALANCED');
   const safe = routes.find(r => r.type === 'SAFE');

@@ -32,9 +32,11 @@ export default function Home() {
     showGeology: true,
     showHazards: true,
     showWaterIce: true,
+    showCraters: true,
     showPOIs: true,
     showRoutes: true,
-    hazardOpacity: 0.6
+    showGraticule: true,
+    layerOpacity: 0.75
   });
 
   const [startPoint, setStartPoint] = useState<MarsCoordinate>(LANDING_SITES[0].startPoint);
