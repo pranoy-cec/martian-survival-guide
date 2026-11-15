@@ -26,36 +26,24 @@ interface NasaImageItem {
   instrument?: string;
 }
 
-// Sub-component for individual card with state-managed thumbnail & No Preview fallback
+// Sub-component for individual card displaying "NO PREVIEW" placeholder
 const NasaImageCard: React.FC<{
   img: NasaImageItem;
   onSelect: (img: NasaImageItem) => void;
 }> = ({ img, onSelect }) => {
-  const [imgError, setImgError] = useState(!img.imageUrl || img.imageUrl.trim() === '');
-
   return (
     <div
       onClick={() => onSelect(img)}
       className="group bg-mars-panel border border-mars-border rounded-xl overflow-hidden hover:border-mars-cyan cursor-pointer transition-all shadow-lg flex flex-col justify-between hover:shadow-2xl hover:-translate-y-0.5"
     >
       <div className="relative h-48 w-full bg-black overflow-hidden flex items-center justify-center">
-        {imgError || !img.imageUrl ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-mars-panel/90 via-mars-dark to-black text-gray-400 p-4 text-center select-none border-b border-mars-border/30">
-            <div className="w-12 h-12 rounded-xl bg-black/60 border border-mars-border flex items-center justify-center shadow-inner">
-              <Camera className="w-6 h-6 text-mars-orange/60" />
-            </div>
-            <span className="text-xs font-bold text-gray-300 tracking-wider font-mono">NO PREVIEW</span>
-            <span className="text-[10px] text-gray-500 font-mono">SCIENTIFIC DOSSIER RECORD</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-mars-panel/90 via-mars-dark to-black text-gray-400 p-4 text-center select-none border-b border-mars-border/30">
+          <div className="w-12 h-12 rounded-xl bg-black/60 border border-mars-border flex items-center justify-center shadow-inner group-hover:border-mars-cyan/50 transition-colors">
+            <Camera className="w-6 h-6 text-mars-orange/60 group-hover:text-mars-cyan transition-colors" />
           </div>
-        ) : (
-          <img
-            src={img.imageUrl}
-            alt={img.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-            onError={() => setImgError(true)}
-          />
-        )}
+          <span className="text-xs font-bold text-gray-300 tracking-wider font-mono">NO PREVIEW</span>
+          <span className="text-[10px] text-gray-500 font-mono">SCIENTIFIC DOSSIER RECORD</span>
+        </div>
         <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-[9px] font-bold text-mars-cyan px-1.5 py-0.5 rounded border border-mars-border">
           {img.id}
         </div>
