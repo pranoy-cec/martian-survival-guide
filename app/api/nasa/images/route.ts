@@ -43,12 +43,26 @@ export async function GET(request: NextRequest) {
         const json = await response.json();
         const rawItems = json?.collection?.items || [];
 
-        liveResults = rawItems.slice(0, 24).map((item: any) => {
+        liveResults = rawItems.slice(0, 24).flatMap((item: any) => {
           const data = item.data?.[0] || {};
           const thumbLink =
             item.links?.find((l: any) => l.rel === 'preview')?.href || item.links?.[0]?.href;
 
-          return {
+          // Drop any live result whose thumbnail URL is not a valid HTTPS URL
+          // (broken CDN tiles, HTTP-only links, or missing thumbnails all cause blank cards)
+          const isValidHttps = (url: string | undefined): boolean => {
+            if (!url) return false;
+            try {
+              const parsed = new URL(url);
+              return parsed.protocol === 'https:' && parsed.hostname.length > 0;
+            } catch {
+              return false;
+            }
+          };
+
+          if (!isValidHttps(thumbLink)) return [];
+
+          return [{
             id: data.nasa_id || item.href,
             title: data.title || 'Mars Planetary Observation',
             description: data.description || 'Authentic NASA Mars planetary imagery capture.',
@@ -57,9 +71,9 @@ export async function GET(request: NextRequest) {
             rover: rover !== 'all' ? rover : 'perseverance',
             category: 'Delta & Sediments',
             keywords: data.keywords || ['Mars', 'NASA'],
-            imageUrl: thumbLink || 'https://photojournal.jpl.nasa.gov/jpeg/PIA24836.jpg',
+            imageUrl: thumbLink,
             sourceUrl: `https://images.nasa.gov/details-${data.nasa_id}`
-          };
+          }];
         });
       }
     } catch {

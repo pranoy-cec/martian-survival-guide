@@ -3,6 +3,7 @@
 import React from 'react';
 import { useMission } from '@/context/MissionContext';
 import { Header } from '@/components/Header';
+import { Sidebar } from '@/components/Sidebar';
 import { ScienceInspector } from '@/components/ScienceInspector';
 import { MissionReportModal } from '@/components/MissionReportModal';
 
@@ -20,29 +21,35 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-mars-darkest">
-      {/* Global Navigation Header with Page Links */}
+      {/* Top brand + sector + telemetry bar */}
       <Header
         selectedSite={selectedSite}
         onSelectSite={setSelectedSite}
         telemetry={telemetry}
       />
 
-      {/* Main Page Workspace */}
-      <main className="relative flex-1 w-full h-full overflow-hidden">
-        {children}
+      {/* Body: left sidebar + main content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left navigation sidebar — each link opens in a new tab */}
+        <Sidebar />
 
-        {/* Global Science POI Inspector Drawer */}
-        <ScienceInspector poi={selectedPOI} onClose={() => setSelectedPOI(null)} />
+        {/* Main Page Workspace */}
+        <main className="relative flex-1 overflow-hidden">
+          {children}
 
-        {/* Global Mission Flight Plan Briefing & JSON Report Generator Modal */}
-        <MissionReportModal
-          isOpen={isReportOpen}
-          onClose={() => setIsReportOpen(false)}
-          activeRoute={activeRoute}
-          site={selectedSite}
-          telemetry={telemetry}
-        />
-      </main>
+          {/* Global Science POI Inspector Drawer */}
+          <ScienceInspector poi={selectedPOI} onClose={() => setSelectedPOI(null)} />
+
+          {/* Global Mission Flight Plan Briefing & JSON Report Generator Modal */}
+          <MissionReportModal
+            isOpen={isReportOpen}
+            onClose={() => setIsReportOpen(false)}
+            activeRoute={activeRoute}
+            site={selectedSite}
+            telemetry={telemetry}
+          />
+        </main>
+      </div>
     </div>
   );
 };

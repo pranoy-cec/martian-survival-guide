@@ -226,11 +226,22 @@ export const NasaScienceExplorer: React.FC = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                   onError={(e) => {
-                    // Graceful fallback to verified photojournal primary
-                    (e.target as HTMLImageElement).src =
-                      'https://photojournal.jpl.nasa.gov/jpeg/PIA24836.jpg';
+                    // Hide the broken img and show the sibling placeholder
+                    const imgEl = e.target as HTMLImageElement;
+                    imgEl.style.display = 'none';
+                    const placeholder = imgEl.nextElementSibling as HTMLElement | null;
+                    if (placeholder) placeholder.style.display = 'flex';
                   }}
                 />
+                {/* "No Preview" placeholder — hidden by default, shown on img error */}
+                <div
+                  style={{ display: 'none' }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-mars-dark text-gray-500 text-[10px] font-mono select-none"
+                >
+                  <Camera className="w-7 h-7 opacity-30" />
+                  <span className="uppercase tracking-widest opacity-50">No Preview</span>
+                  <span className="text-[9px] opacity-30">{img.id}</span>
+                </div>
                 <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-[9px] font-bold text-mars-cyan px-1.5 py-0.5 rounded border border-mars-border">
                   {img.id}
                 </div>
