@@ -441,14 +441,16 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     };
   }, [selectedSite, width, height, globeMode, showCraters, zoom]);
 
   // Pointer Drag Handlers for responsive mouse and touch 3D rotation
+  const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     isDraggingRef.current = true;
-    autoRotateRef.current = false;
-    setIsAutoRotating(false);
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     dragDistanceRef.current = 0;
     lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -473,6 +475,13 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     } catch {
       // Ignored
     }
+
+    // Automatically resume normal auto-rotation when not rotating with mouse
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      autoRotateRef.current = true;
+      setIsAutoRotating(true);
+    }, 600);
   };
 
   const handleCanvasClick = () => {
