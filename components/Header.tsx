@@ -93,11 +93,10 @@ export const Header: React.FC<HeaderProps> = ({
             <Link
               key={item.href}
               href={item.href}
-              className={`px-2.5 py-1 rounded text-xs font-medium font-mono flex items-center gap-1.5 whitespace-nowrap transition-all ${
-                isActive
+              className={`px-2.5 py-1 rounded text-xs font-medium font-mono flex items-center gap-1.5 whitespace-nowrap transition-all ${isActive
                   ? 'bg-mars-red text-white shadow font-bold'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-mars-panel'
-              }`}
+                }`}
             >
               <Icon className="w-3.5 h-3.5" />
               <span>{item.label}</span>
