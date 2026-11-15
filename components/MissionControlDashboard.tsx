@@ -102,8 +102,8 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
           <MarsGlobe
             selectedSite={selectedSite}
             onSelectSite={onSelectSite}
-            width={260}
-            height={260}
+            width={280}
+            height={280}
           />
 
           <div className="w-full mt-3 p-2 rounded-lg bg-black/40 border border-mars-border text-[11px] space-y-1">
