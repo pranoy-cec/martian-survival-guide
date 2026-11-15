@@ -8,13 +8,7 @@ import {
   Filter,
   Calendar,
   Camera,
-  Info,
-  Loader2,
-  Tag,
-  Download,
-  Eye,
-  Layers,
-  Compass
+  Loader2
 } from 'lucide-react';
 
 interface NasaImageItem {
@@ -32,6 +26,65 @@ interface NasaImageItem {
   instrument?: string;
 }
 
+// Sub-component for individual card with state-managed thumbnail & No Preview fallback
+const NasaImageCard: React.FC<{
+  img: NasaImageItem;
+  onSelect: (img: NasaImageItem) => void;
+}> = ({ img, onSelect }) => {
+  const [imgError, setImgError] = useState(!img.imageUrl || img.imageUrl.trim() === '');
+
+  return (
+    <div
+      onClick={() => onSelect(img)}
+      className="group bg-mars-panel border border-mars-border rounded-xl overflow-hidden hover:border-mars-cyan cursor-pointer transition-all shadow-lg flex flex-col justify-between hover:shadow-2xl hover:-translate-y-0.5"
+    >
+      <div className="relative h-48 w-full bg-black overflow-hidden flex items-center justify-center">
+        {imgError || !img.imageUrl ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-mars-panel/90 via-mars-dark to-black text-gray-400 p-4 text-center select-none border-b border-mars-border/30">
+            <div className="w-12 h-12 rounded-xl bg-black/60 border border-mars-border flex items-center justify-center shadow-inner">
+              <Camera className="w-6 h-6 text-mars-orange/60" />
+            </div>
+            <span className="text-xs font-bold text-gray-300 tracking-wider font-mono">NO PREVIEW</span>
+            <span className="text-[10px] text-gray-500 font-mono">SCIENTIFIC DOSSIER RECORD</span>
+          </div>
+        ) : (
+          <img
+            src={img.imageUrl}
+            alt={img.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        )}
+        <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-[9px] font-bold text-mars-cyan px-1.5 py-0.5 rounded border border-mars-border">
+          {img.id}
+        </div>
+        {img.sol && (
+          <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm text-[9px] font-bold text-amber-400 px-1.5 py-0.5 rounded border border-mars-border">
+            Sol {img.sol}
+          </div>
+        )}
+      </div>
+
+      <div className="p-3 space-y-2">
+        <h3 className="text-xs font-bold text-white line-clamp-2 group-hover:text-mars-cyan transition-colors">
+          {img.title}
+        </h3>
+        <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">
+          {img.description}
+        </p>
+        <div className="flex items-center justify-between text-[10px] text-gray-500 pt-1 border-t border-mars-border/40">
+          <span className="flex items-center gap-1 text-mars-sand">
+            <Calendar className="w-3 h-3" />
+            {img.dateCreated ? img.dateCreated.slice(0, 10) : 'NASA Archive'}
+          </span>
+          <span className="font-bold text-gray-400">{img.center || 'JPL'}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const NasaScienceExplorer: React.FC = () => {
   const [query, setQuery] = useState('');
   const [rover, setRover] = useState<'all' | 'perseverance' | 'curiosity' | 'opportunity' | 'spirit' | 'mro'>('all');
@@ -40,6 +93,11 @@ export const NasaScienceExplorer: React.FC = () => {
   const [images, setImages] = useState<NasaImageItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<NasaImageItem | null>(null);
+  const [modalImgError, setModalImgError] = useState(false);
+
+  useEffect(() => {
+    setModalImgError(!selectedImage?.imageUrl || selectedImage.imageUrl.trim() === '');
+  }, [selectedImage]);
 
   const categories = [
     'all',
@@ -113,7 +171,7 @@ export const NasaScienceExplorer: React.FC = () => {
               NASA SCIENCE EXPLORER & PLANETARY IMAGE REPOSITORY
             </h1>
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-              {images.length} IMAGES LOADED
+              {images.length} RECORDS LOADED
             </span>
           </div>
           <p className="text-xs text-gray-400 mt-1">
@@ -214,60 +272,7 @@ export const NasaScienceExplorer: React.FC = () => {
       ) : images.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images.map((img) => (
-            <div
-              key={img.id}
-              onClick={() => setSelectedImage(img)}
-              className="group bg-mars-panel border border-mars-border rounded-xl overflow-hidden hover:border-mars-cyan cursor-pointer transition-all shadow-lg flex flex-col justify-between hover:shadow-2xl hover:-translate-y-0.5"
-            >
-              <div className="relative h-48 w-full bg-black overflow-hidden flex items-center justify-center">
-                <img
-                  src={img.imageUrl}
-                  alt={img.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                  onError={(e) => {
-                    // Hide the broken img and show the sibling placeholder
-                    const imgEl = e.target as HTMLImageElement;
-                    imgEl.style.display = 'none';
-                    const placeholder = imgEl.nextElementSibling as HTMLElement | null;
-                    if (placeholder) placeholder.style.display = 'flex';
-                  }}
-                />
-                {/* "No Preview" placeholder — hidden by default, shown on img error */}
-                <div
-                  style={{ display: 'none' }}
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-mars-dark text-gray-500 text-[10px] font-mono select-none"
-                >
-                  <Camera className="w-7 h-7 opacity-30" />
-                  <span className="uppercase tracking-widest opacity-50">No Preview</span>
-                  <span className="text-[9px] opacity-30">{img.id}</span>
-                </div>
-                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-[9px] font-bold text-mars-cyan px-1.5 py-0.5 rounded border border-mars-border">
-                  {img.id}
-                </div>
-                {img.sol && (
-                  <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm text-[9px] font-bold text-amber-400 px-1.5 py-0.5 rounded border border-mars-border">
-                    Sol {img.sol}
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3 space-y-2">
-                <h3 className="text-xs font-bold text-white line-clamp-2 group-hover:text-mars-cyan transition-colors">
-                  {img.title}
-                </h3>
-                <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">
-                  {img.description}
-                </p>
-                <div className="flex items-center justify-between text-[10px] text-gray-500 pt-1 border-t border-mars-border/40">
-                  <span className="flex items-center gap-1 text-mars-sand">
-                    <Calendar className="w-3 h-3" />
-                    {img.dateCreated ? img.dateCreated.slice(0, 10) : 'NASA Archive'}
-                  </span>
-                  <span className="font-bold text-gray-400">{img.center || 'JPL'}</span>
-                </div>
-              </div>
-            </div>
+            <NasaImageCard key={img.id} img={img} onSelect={setSelectedImage} />
           ))}
         </div>
       ) : (
@@ -301,12 +306,25 @@ export const NasaScienceExplorer: React.FC = () => {
               </button>
             </div>
 
-            <div className="w-full max-h-96 bg-black rounded-xl overflow-hidden flex items-center justify-center border border-mars-border/60">
-              <img
-                src={selectedImage.imageUrl}
-                alt={selectedImage.title}
-                className="max-h-96 max-w-full object-contain"
-              />
+            <div className="w-full max-h-96 min-h-[16rem] bg-black rounded-xl overflow-hidden flex items-center justify-center border border-mars-border/60">
+              {modalImgError || !selectedImage.imageUrl ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center space-y-2 select-none">
+                  <div className="w-16 h-16 rounded-2xl bg-mars-dark/90 border border-mars-border flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-mars-orange/60" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-200 tracking-wider font-mono">NO PREVIEW AVAILABLE</span>
+                  <p className="text-xs text-gray-400 max-w-sm font-mono">
+                    Optical camera preview unavailable for this observation. Full instrument telemetry and parameters are preserved below.
+                  </p>
+                </div>
+              ) : (
+                <img
+                  src={selectedImage.imageUrl}
+                  alt={selectedImage.title}
+                  className="max-h-96 max-w-full object-contain"
+                  onError={() => setModalImgError(true)}
+                />
+              )}
             </div>
 
             <div className="space-y-3 text-xs text-gray-300">

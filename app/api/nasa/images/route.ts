@@ -19,65 +19,65 @@ export async function GET(request: NextRequest) {
 
     // 2. Also attempt to fetch live from images-api.nasa.gov with a fast abort controller
     let liveResults: any[] = [];
-    try {
-      let searchQuery = q;
-      if (rover !== 'all' && !searchQuery.toLowerCase().includes(rover)) {
-        searchQuery = `Mars ${rover} ${q}`;
-      }
+    // Only query live API if a specific term or rover is requested, to prevent generic non-planetary photos
+    const isGenericAll = (q.toLowerCase() === 'mars' || q.trim() === '') && rover === 'all' && category === 'all';
+    if (!isGenericAll) {
+      try {
+        let searchQuery = q;
+        if (rover !== 'all' && !searchQuery.toLowerCase().includes(rover)) {
+          searchQuery = `Mars ${rover} ${q}`;
+        }
 
-      const nasaUrl = new URL('https://images-api.nasa.gov/search');
-      nasaUrl.searchParams.set('q', searchQuery);
-      nasaUrl.searchParams.set('media_type', 'image');
-      nasaUrl.searchParams.set('page', String(page));
+        const nasaUrl = new URL('https://images-api.nasa.gov/search');
+        nasaUrl.searchParams.set('q', searchQuery);
+        nasaUrl.searchParams.set('media_type', 'image');
+        nasaUrl.searchParams.set('page', String(page));
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-      const response = await fetch(nasaUrl.toString(), {
-        headers: { Accept: 'application/json' },
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const json = await response.json();
-        const rawItems = json?.collection?.items || [];
-
-        liveResults = rawItems.slice(0, 24).flatMap((item: any) => {
-          const data = item.data?.[0] || {};
-          const thumbLink =
-            item.links?.find((l: any) => l.rel === 'preview')?.href || item.links?.[0]?.href;
-
-          // Drop any live result whose thumbnail URL is not a valid HTTPS URL
-          // (broken CDN tiles, HTTP-only links, or missing thumbnails all cause blank cards)
-          const isValidHttps = (url: string | undefined): boolean => {
-            if (!url) return false;
-            try {
-              const parsed = new URL(url);
-              return parsed.protocol === 'https:' && parsed.hostname.length > 0;
-            } catch {
-              return false;
-            }
-          };
-
-          if (!isValidHttps(thumbLink)) return [];
-
-          return [{
-            id: data.nasa_id || item.href,
-            title: data.title || 'Mars Planetary Observation',
-            description: data.description || 'Authentic NASA Mars planetary imagery capture.',
-            dateCreated: data.date_created,
-            center: data.center || 'JPL',
-            rover: rover !== 'all' ? rover : 'perseverance',
-            category: 'Delta & Sediments',
-            keywords: data.keywords || ['Mars', 'NASA'],
-            imageUrl: thumbLink,
-            sourceUrl: `https://images.nasa.gov/details-${data.nasa_id}`
-          }];
+        const response = await fetch(nasaUrl.toString(), {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const json = await response.json();
+          const rawItems = json?.collection?.items || [];
+
+          liveResults = rawItems.slice(0, 24).flatMap((item: any) => {
+            const data = item.data?.[0] || {};
+            const thumbLink =
+              item.links?.find((l: any) => l.rel === 'preview')?.href || item.links?.[0]?.href;
+
+            const isValidHttps = (url: string | undefined): boolean => {
+              if (!url) return false;
+              try {
+                const parsed = new URL(url);
+                return parsed.protocol === 'https:' && parsed.hostname.length > 0;
+              } catch {
+                return false;
+              }
+            };
+
+            return [{
+              id: data.nasa_id || item.href,
+              title: data.title || 'Mars Planetary Observation',
+              description: data.description || 'Authentic NASA Mars planetary imagery capture.',
+              dateCreated: data.date_created,
+              center: data.center || 'JPL',
+              rover: rover !== 'all' ? rover : 'perseverance',
+              category: 'Delta & Sediments',
+              keywords: data.keywords || ['Mars', 'NASA'],
+              imageUrl: isValidHttps(thumbLink) ? thumbLink : '',
+              sourceUrl: `https://images.nasa.gov/details-${data.nasa_id}`
+            }];
+          });
+        }
+      } catch {
+        // Upstream NASA API timeout/error; fall back gracefully to verified primary archive
       }
-    } catch {
-      // Upstream NASA API timeout/error; fall back gracefully to verified primary archive
     }
 
     // 3. Merge results: prioritizing verified authentic catalog items, followed by live API items (deduped by ID)

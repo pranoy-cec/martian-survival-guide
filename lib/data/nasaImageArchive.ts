@@ -607,13 +607,13 @@ export const NASA_IMAGE_ARCHIVE: NasaImageArchiveItem[] = [
     id: 'PIA24681-meda',
     title: 'Perseverance MEDA Meteorology First Day Atmospheric Measurements',
     description:
-      'Perseverance onboard MEDA weather station recorded the first full sol of atmospheric data: temperature −17°C to −79°C, wind speeds up to 7 m/s, and UV radiation flux — vital for crew life-support planning.',
+      'Perseverance onboard MEDA weather station recorded the first full sol of atmospheric data: temperature −17°C to −79°C, wind speeds up to 7 m/s, and UV radiation flux — vital for crew life-support planning. Atmospheric telemetry log without optical camera frame.',
     dateCreated: '2021-02-23',
     center: 'JPL',
     rover: 'perseverance',
     category: 'Atmosphere & Dust',
     keywords: ['MEDA', 'Meteorology', 'Temperature', 'Wind', 'UV Radiation', 'Jezero'],
-    imageUrl: 'https://photojournal.jpl.nasa.gov/jpeg/PIA24681.jpg',
+    imageUrl: '',
     sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA24681',
     sol: 5,
     instrument: 'MEDA Weather Station'
@@ -636,13 +636,13 @@ export const NASA_IMAGE_ARCHIVE: NasaImageArchiveItem[] = [
     id: 'PIA25969',
     title: 'Perseverance MEDA RDS Dust Particle Size Distribution Sol 450',
     description:
-      'MEDA Radiation and Dust Sensor (RDS) composite sky image showing the angular distribution of suspended aerosols during a moderate regional dust storm. Dust optical depth 0.72 — a critical parameter for Mars power budgets.',
+      'MEDA Radiation and Dust Sensor (RDS) sky sensor measurements showing the angular distribution of suspended aerosols during a moderate regional dust storm. Aerosol optical depth 0.72 recorded as radiometric telemetry without optical camera frame.',
     dateCreated: '2022-07-01',
     center: 'JPL',
     rover: 'perseverance',
     category: 'Atmosphere & Dust',
     keywords: ['MEDA RDS', 'Aerosol', 'Dust Storm', 'Optical Depth', 'Perseverance', 'Power Budget'],
-    imageUrl: 'https://photojournal.jpl.nasa.gov/jpeg/PIA25969.jpg',
+    imageUrl: '',
     sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA25969',
     sol: 450,
     instrument: 'MEDA RDS'
@@ -990,6 +990,36 @@ export const NASA_IMAGE_ARCHIVE: NasaImageArchiveItem[] = [
     imageUrl: 'https://photojournal.jpl.nasa.gov/jpeg/PIA19672.jpg',
     sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA19672',
     instrument: 'THEMIS Thermal Infrared'
+  },
+  {
+    id: 'SEIS-S1222a',
+    title: 'InSight SEIS Marsquake S1222a Magnitude 4.7 Seismic Telemetry',
+    description:
+      'Continuous 100 Hz broad-band seismic waveform packet of sol 1222 event S1222a — the largest tectonic marsquake ever recorded on Mars, lasting over 10 hours and radiating Rayleigh surface waves around the planet. Non-imaging seismometer telemetry record.',
+    dateCreated: '2022-05-04',
+    center: 'JPL',
+    rover: 'insight',
+    category: 'Hardware & Ingenuity',
+    keywords: ['InSight', 'SEIS', 'Marsquake', 'S1222a', 'Seismometer', 'Telemetry'],
+    imageUrl: '',
+    sourceUrl: 'https://mars.nasa.gov/insight/mission/instruments/seis/',
+    sol: 1222,
+    instrument: 'SEIS VBB Seismometer'
+  },
+  {
+    id: 'RIMFAX-RADAR-07',
+    title: 'Perseverance RIMFAX Subsurface Radar Sounding Across Jezero Floor',
+    description:
+      'Radar reflectometry soundings penetrating 15 meters beneath the Jezero Crater floor, revealing tilted dielectric boundary layers that correspond to ancient lakebed sedimentary delta bottoms. Pure radar data profile without optical thumbnail.',
+    dateCreated: '2022-08-25',
+    center: 'JPL',
+    rover: 'perseverance',
+    category: 'Delta & Sediments',
+    keywords: ['RIMFAX', 'Radar Sounder', 'Subsurface', 'Dielectric', 'Jezero', 'GPR'],
+    imageUrl: '',
+    sourceUrl: 'https://mars.nasa.gov/mars2020/spacecraft/instruments/rimfax/',
+    sol: 538,
+    instrument: 'RIMFAX GPR Radar'
   },
   {
     id: 'PIA24543',
