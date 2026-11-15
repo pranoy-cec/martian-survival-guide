@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { LANDING_SITES } from '@/lib/data/landingSites';
 import { MARS_CRATERS } from '@/lib/data/marsCraters';
 import { LandingSitePreset } from '@/lib/types';
-import { RotateCw, Compass, Eye, Sparkles } from 'lucide-react';
+import { RotateCw, Plus, Minus, RefreshCw } from 'lucide-react';
 
 interface MarsGlobeProps {
   selectedSite: LandingSitePreset;
@@ -16,8 +16,8 @@ interface MarsGlobeProps {
 export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   selectedSite,
   onSelectSite,
-  width = 280,
-  height = 280
+  width = 260,
+  height = 260
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotLonRef = useRef<number>(selectedSite.center.lon);
@@ -31,7 +31,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   const [globeMode, setGlobeMode] = useState<'NATURAL_VIKING' | 'MOLA_ELEVATION'>('NATURAL_VIKING');
   const [showCraters, setShowCraters] = useState<boolean>(true);
   const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
-  const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<number>(1.0);
 
   // Sync orientation when user picks a site from dropdown
   useEffect(() => {
@@ -45,21 +45,31 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Try loading NASA Viking Global Mosaic texture image for photorealism
+    // Load NASA Viking Global Color Mosaic tile
     const nasaVikingImg = new Image();
     nasaVikingImg.crossOrigin = 'anonymous';
-    // NASA Viking high-res MDIM 2.1 global texture mirror
     nasaVikingImg.src =
       'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/0/0/0.jpg';
-    let imgLoaded = false;
+    let vikingLoaded = false;
     nasaVikingImg.onload = () => {
-      imgLoaded = true;
+      vikingLoaded = true;
+    };
+
+    // Load NASA MOLA Global Topography Elevation tile
+    const nasaMolaImg = new Image();
+    nasaMolaImg.crossOrigin = 'anonymous';
+    nasaMolaImg.src =
+      'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0//default/default028mm/0/0/0.jpg';
+    let molaLoaded = false;
+    nasaMolaImg.onload = () => {
+      molaLoaded = true;
     };
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      const radius = width * 0.43;
+      // Base radius scaled by current zoom factor
+      const radius = width * 0.42 * zoom;
       const centerX = width / 2;
       const centerY = height / 2;
 
@@ -71,11 +81,11 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
         radius * 0.94,
         centerX,
         centerY,
-        radius * 1.28
+        radius * 1.25
       );
       if (globeMode === 'NATURAL_VIKING') {
         glowGrad.addColorStop(0, 'rgba(230, 115, 80, 0.45)');
-        glowGrad.addColorStop(0.35, 'rgba(120, 180, 240, 0.22)'); // Blue Rayleigh haze on Mars limb!
+        glowGrad.addColorStop(0.35, 'rgba(120, 180, 240, 0.22)'); // Blue Rayleigh haze on Mars limb
         glowGrad.addColorStop(0.7, 'rgba(193, 68, 14, 0.08)');
         glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       } else {
@@ -85,7 +95,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
       }
       ctx.fillStyle = glowGrad;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 1.28, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, radius * 1.25, 0, Math.PI * 2);
       ctx.fill();
 
       // 2. Base Sphere Clipping
@@ -122,30 +132,72 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
       ctx.fillStyle = sphereGrad;
       ctx.fill();
 
-      // 3. Render NASA Texture if loaded, or High-Fidelity Planetary Features
-      const rotLonRad = (rotLonRef.current * Math.PI) / 180;
-      const rotLatRad = (rotLatRef.current * Math.PI) / 180;
+      // 3. Render NASA 360° Seamless Equirectangular Texture
+      const activeImg = globeMode === 'NATURAL_VIKING' ? nasaVikingImg : nasaMolaImg;
+      const isImgReady = globeMode === 'NATURAL_VIKING' ? vikingLoaded : molaLoaded;
 
-      if (imgLoaded && nasaVikingImg.naturalWidth > 0 && globeMode === 'NATURAL_VIKING') {
-        ctx.globalAlpha = 0.55;
-        // Project texture map across visible hemisphere using longitudinal scroll
-        const texOffset = ((rotLonRef.current % 360) / 360) * nasaVikingImg.naturalWidth;
-        ctx.drawImage(
-          nasaVikingImg,
-          texOffset,
-          0,
-          nasaVikingImg.naturalWidth / 2,
-          nasaVikingImg.naturalHeight,
-          centerX - radius,
-          centerY - radius,
-          radius * 2,
-          radius * 2
-        );
+      if (isImgReady && activeImg.naturalWidth > 0) {
+        ctx.globalAlpha = 0.65;
+        const imgW = activeImg.naturalWidth;
+        const imgH = activeImg.naturalHeight;
+        const halfW = imgW / 2;
+
+        // Correct 360-degree cylindrical wrap-around
+        const normLon = ((rotLonRef.current % 360) + 360) % 360;
+        const sx = (normLon / 360) * imgW;
+
+        if (sx + halfW <= imgW) {
+          // Single-slice rendering
+          ctx.drawImage(
+            activeImg,
+            sx,
+            0,
+            halfW,
+            imgH,
+            centerX - radius,
+            centerY - radius,
+            radius * 2,
+            radius * 2
+          );
+        } else {
+          // Two-slice seamless wrap-around across the 360°/0° meridian
+          const slice1W = imgW - sx;
+          const slice2W = halfW - slice1W;
+          const dest1W = (slice1W / halfW) * (radius * 2);
+          const dest2W = radius * 2 - dest1W;
+
+          // Slice 1: right edge of image
+          ctx.drawImage(
+            activeImg,
+            sx,
+            0,
+            slice1W,
+            imgH,
+            centerX - radius,
+            centerY - radius,
+            dest1W,
+            radius * 2
+          );
+          // Slice 2: wrapped to left edge of image
+          ctx.drawImage(
+            activeImg,
+            0,
+            0,
+            slice2W,
+            imgH,
+            centerX - radius + dest1W,
+            centerY - radius,
+            dest2W,
+            radius * 2
+          );
+        }
         ctx.globalAlpha = 1.0;
       }
 
-      // Procedural Albedo Markings (Syrtis Major, Hellas, Sinus Sabaeus, Valles Marineris)
-      // These guarantee authentic features even if tile server has network latency
+      // Procedural Albedo Markings across the entire 360° globe (no blank 180° half!)
+      const rotLonRad = (rotLonRef.current * Math.PI) / 180;
+      const rotLatRad = (rotLatRef.current * Math.PI) / 180;
+
       const drawFeature = (
         fLat: number,
         fLon: number,
@@ -156,7 +208,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
         const dLon = ((fLon - rotLonRef.current) * Math.PI) / 180;
         const latRad = (fLat * Math.PI) / 180;
 
-        // Orthographic projection formulas with pitch tilt
+        // 3D Orthographic projection formulas with pitch tilt
         const cosLat = Math.cos(latRad);
         const sinLat = Math.sin(latRad);
         const cosPitch = Math.cos(rotLatRad);
@@ -166,7 +218,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
         const yNorm = sinLat * cosPitch - cosLat * Math.cos(dLon) * sinPitch;
         const zNorm = sinLat * sinPitch + cosLat * Math.cos(dLon) * cosPitch;
 
-        // Only draw if on front hemisphere
+        // Visible only on front-facing hemisphere
         if (zNorm > 0.05) {
           const px = centerX + xNorm * radius;
           const py = centerY - yNorm * radius;
@@ -185,23 +237,51 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
         }
       };
 
-      // Syrtis Major (dark basaltic volcanic shield)
+      // ── HEMISPHERE 1 (0° to 180° Longitude) ──
+      // Syrtis Major Planum (dark volcanic shield)
       drawFeature(9.2, 70.0, 650, 'rgba(40, 15, 8, 0.48)', 'circle');
-      // Sinus Sabaeus & Meridiani (dark equatorial belt)
-      drawFeature(-2.0, 345.0, 950, 'rgba(45, 18, 10, 0.42)', 'chasm');
       // Hellas Basin (huge bright impact depression)
       drawFeature(-42.7, 70.0, 1100, 'rgba(235, 175, 130, 0.45)', 'circle');
-      // Argyre Basin
-      drawFeature(-49.7, 316.0, 500, 'rgba(225, 160, 120, 0.35)', 'circle');
-      // Valles Marineris (massive canyon)
-      drawFeature(-10.0, 290.0, 1600, 'rgba(30, 10, 5, 0.55)', 'chasm');
-      // Tharsis Montes & Olympus Mons
-      drawFeature(18.65, 226.2, 350, 'rgba(255, 195, 140, 0.55)', 'circle');
-      drawFeature(0.0, 248.0, 450, 'rgba(220, 140, 95, 0.4)', 'circle');
+      // Isidis Planitia (bright impact basin adjacent to Jezero)
+      drawFeature(12.9, 87.0, 600, 'rgba(230, 165, 120, 0.48)', 'circle');
+      // Utopia Planitia (vast northern impact lowland)
+      drawFeature(45.0, 118.0, 1100, 'rgba(48, 20, 10, 0.38)', 'circle');
+      // Elysium Mons & Province (elevated volcanic shield)
+      drawFeature(25.0, 147.2, 450, 'rgba(240, 180, 135, 0.52)', 'circle');
+      // Elysium Planitia (dark lava plain, InSight lander site)
+      drawFeature(10.0, 150.0, 850, 'rgba(42, 18, 10, 0.38)', 'chasm');
+      // Gale Crater & Aeolis Mons (Curiosity site)
+      drawFeature(-5.4, 137.8, 240, 'rgba(35, 12, 6, 0.55)', 'circle');
+      // Terra Cimmeria (ancient cratered southern highlands)
+      drawFeature(-30.0, 145.0, 950, 'rgba(40, 16, 8, 0.42)', 'chasm');
+      // Gusev Crater & Columbia Hills (Spirit rover site)
+      drawFeature(-14.6, 175.4, 250, 'rgba(36, 14, 8, 0.52)', 'circle');
+      // Apollinaris Patera (shield volcano)
+      drawFeature(-9.3, 174.4, 300, 'rgba(245, 190, 140, 0.50)', 'circle');
+
+      // ── HEMISPHERE 2 (180° to 360° Longitude) ──
+      // Amazonis Planitia (smooth volcanic plains)
+      drawFeature(15.0, 196.0, 900, 'rgba(215, 135, 90, 0.36)', 'circle');
+      // Terra Sirenum (cratered highlands)
+      drawFeature(-35.0, 195.0, 850, 'rgba(38, 14, 6, 0.40)', 'chasm');
+      // Olympus Mons (largest volcano in the solar system, 22km tall)
+      drawFeature(18.65, 226.2, 380, 'rgba(255, 195, 140, 0.60)', 'circle');
+      // Tharsis Montes (Arsia, Pavonis, Ascraeus)
+      drawFeature(0.0, 248.0, 500, 'rgba(220, 140, 95, 0.45)', 'circle');
+      // Valles Marineris (massive 4,000km canyon system)
+      drawFeature(-10.0, 290.0, 1600, 'rgba(30, 10, 5, 0.60)', 'chasm');
+      // Argyre Basin (giant southern impact basin)
+      drawFeature(-49.7, 316.0, 500, 'rgba(225, 160, 120, 0.38)', 'circle');
+      // Acidalia Planitia (dark northern plain)
+      drawFeature(48.0, 330.0, 950, 'rgba(35, 15, 8, 0.45)', 'circle');
+      // Sinus Sabaeus & Meridiani Planum (Opportunity blueberries site)
+      drawFeature(-2.0, 345.0, 950, 'rgba(45, 18, 10, 0.45)', 'chasm');
+
+      // ── POLAR CAPS (Both Poles) ──
       // North Polar Ice Cap (Planum Boreum - bright white water/dry ice)
-      drawFeature(85.0, 0.0, 550, 'rgba(255, 255, 255, 0.88)', 'icecap');
+      drawFeature(85.0, 0.0, 550, 'rgba(255, 255, 255, 0.90)', 'icecap');
       // South Polar Ice Cap (Planum Australe)
-      drawFeature(-85.0, 0.0, 420, 'rgba(255, 255, 255, 0.82)', 'icecap');
+      drawFeature(-85.0, 0.0, 420, 'rgba(255, 255, 255, 0.85)', 'icecap');
 
       // 4. Coordinate Graticule (Parallels and Meridians)
       ctx.strokeStyle =
@@ -233,7 +313,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
         }
       });
 
-      // Meridians
+      // Meridians across all 360°
       for (let lon = 0; lon < 360; lon += 45) {
         const dLon = ((lon - rotLonRef.current) * Math.PI) / 180;
         const cosLon = Math.cos(dLon);
@@ -362,7 +442,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [selectedSite, width, height, globeMode, showCraters]);
+  }, [selectedSite, width, height, globeMode, showCraters, zoom]);
 
   // Pointer Drag Handlers for responsive mouse and touch 3D rotation
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -404,6 +484,21 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     }
   };
 
+  // Zoom handlers
+  const handleZoomIn = () => {
+    setZoom((z) => Math.min(2.0, parseFloat((z + 0.2).toFixed(2))));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((z) => Math.max(0.7, parseFloat((z - 0.2).toFixed(2))));
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1.0);
+    rotLonRef.current = selectedSite.center.lon;
+    rotLatRef.current = Math.max(-45, Math.min(45, selectedSite.center.lat * 0.5));
+  };
+
   return (
     <div className="relative flex flex-col items-center justify-center p-2 rounded-xl bg-black/40 border border-mars-border/60">
       {/* Globe Mode & Overlay Controls Toolbar */}
@@ -433,35 +528,69 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
           </button>
         </div>
 
-        <button
-          onClick={() => {
-            const nextVal = !autoRotateRef.current;
-            autoRotateRef.current = nextVal;
-            setIsAutoRotating(nextVal);
-          }}
-          className={`p-1 rounded border transition-all ${
-            isAutoRotating
-              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-700/60'
-              : 'bg-black/40 text-gray-400 border-mars-border'
-          }`}
-          title="Toggle Auto-Rotation"
-        >
-          <RotateCw className={`w-3 h-3 ${isAutoRotating ? 'animate-spin' : ''}`} />
-        </button>
+        {/* Zoom & Auto-Rotation Controls */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleZoomIn}
+            className="p-1 rounded border bg-black/40 text-gray-300 hover:text-white border-mars-border hover:bg-mars-dark transition-all"
+            title="Zoom In (+)"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+          <span className="text-[9px] text-mars-cyan px-0.5 font-bold">
+            {zoom.toFixed(1)}x
+          </span>
+          <button
+            onClick={handleZoomOut}
+            className="p-1 rounded border bg-black/40 text-gray-300 hover:text-white border-mars-border hover:bg-mars-dark transition-all"
+            title="Zoom Out (-)"
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          <button
+            onClick={handleResetZoom}
+            className="p-1 rounded border bg-black/40 text-gray-400 hover:text-white border-mars-border transition-all"
+            title="Reset Zoom & Orientation"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => {
+              const nextVal = !autoRotateRef.current;
+              autoRotateRef.current = nextVal;
+              setIsAutoRotating(nextVal);
+            }}
+            className={`p-1 rounded border transition-all ${
+              isAutoRotating
+                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-700/60'
+                : 'bg-black/40 text-gray-400 border-mars-border'
+            }`}
+            title="Toggle Auto-Rotation"
+          >
+            <RotateCw className={`w-3 h-3 ${isAutoRotating ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className="cursor-grab active:cursor-grabbing touch-none select-none"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onClick={handleCanvasClick}
-        title="Click to cycle sectors; Click and drag with mouse to freely rotate 3D Mars globe"
-      />
+      <div className="relative overflow-hidden rounded-lg">
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          className="cursor-grab active:cursor-grabbing touch-none select-none"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onClick={handleCanvasClick}
+          onWheel={(e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.15 : -0.15;
+            setZoom((z) => Math.max(0.7, Math.min(2.0, parseFloat((z + delta).toFixed(2)))));
+          }}
+          title="Click to cycle sectors; Click and drag with mouse to freely rotate 3D Mars globe; Scroll to zoom"
+        />
+      </div>
 
       <div className="w-full text-[10px] font-mono text-gray-400 mt-2 flex items-center justify-between px-1">
         <div className="flex items-center gap-1.5">
