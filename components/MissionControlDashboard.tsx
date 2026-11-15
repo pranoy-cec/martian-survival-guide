@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { MarsGlobe } from './MarsGlobe';
 import { LandingSitePreset, RouteOption, EnvironmentalTelemetry } from '@/lib/types';
 import { PLANETARY_DATASETS } from '@/lib/data/datasets';
@@ -29,8 +30,8 @@ interface MissionControlDashboardProps {
   onSelectSite: (site: LandingSitePreset) => void;
   activeRoute: RouteOption | null;
   telemetry: EnvironmentalTelemetry | null;
-  onNavigateTab: (tab: 'map' | 'routes' | 'environment' | 'science') => void;
-  onOpenReport: () => void;
+  onNavigateTab?: (tab: 'map' | 'routes' | 'environment' | 'science') => void;
+  onOpenReport?: () => void;
 }
 
 export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = ({
@@ -69,21 +70,20 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenReport}
-            disabled={!activeRoute}
-            className="px-3.5 py-1.5 rounded-lg bg-mars-dark border border-mars-border text-xs text-gray-200 hover:text-white hover:border-mars-orange flex items-center gap-1.5 transition-all disabled:opacity-40"
+          <Link
+            href="/briefing"
+            className="px-3.5 py-1.5 rounded-lg bg-mars-dark border border-mars-border text-xs text-gray-200 hover:text-white hover:border-mars-orange flex items-center gap-1.5 transition-all"
           >
             <FileText className="w-3.5 h-3.5 text-mars-orange" />
-            <span>Generate Briefing</span>
-          </button>
-          <button
-            onClick={() => onNavigateTab('routes')}
+            <span>Mission Briefing</span>
+          </Link>
+          <Link
+            href="/routes"
             className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-mars-red to-mars-orange text-white text-xs font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Launch Route Optimizer</span>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -372,8 +372,8 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
 
           {/* Quick Action Navigation */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-mars-border">
-            <button
-              onClick={() => onNavigateTab('map')}
+            <Link
+              href="/map"
               className="p-2.5 rounded-lg bg-mars-dark border border-mars-border hover:border-mars-cyan text-xs font-bold text-gray-200 hover:text-white flex items-center justify-between transition-all"
             >
               <span className="flex items-center gap-1.5">
@@ -381,9 +381,9 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
                 Open GIS Map
               </span>
               <ChevronRight className="w-3 h-3 text-gray-400" />
-            </button>
-            <button
-              onClick={() => onNavigateTab('routes')}
+            </Link>
+            <Link
+              href="/routes"
               className="p-2.5 rounded-lg bg-mars-dark border border-mars-border hover:border-mars-orange text-xs font-bold text-gray-200 hover:text-white flex items-center justify-between transition-all"
             >
               <span className="flex items-center gap-1.5">
@@ -391,9 +391,9 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
                 Traverse Plan
               </span>
               <ChevronRight className="w-3 h-3 text-gray-400" />
-            </button>
-            <button
-              onClick={() => onNavigateTab('science')}
+            </Link>
+            <Link
+              href="/science"
               className="p-2.5 rounded-lg bg-mars-dark border border-mars-border hover:border-mars-sand text-xs font-bold text-gray-200 hover:text-white flex items-center justify-between transition-all col-span-2 sm:col-span-1"
             >
               <span className="flex items-center gap-1.5">
@@ -401,7 +401,7 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
                 NASA Archives
               </span>
               <ChevronRight className="w-3 h-3 text-gray-400" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -415,13 +415,13 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
               <Activity className="w-4 h-4 text-mars-cyan" />
               SURFACE ENVIRONMENTAL OVERVIEW (MEDA SENSOR SUITE)
             </span>
-            <button
-              onClick={() => onNavigateTab('environment')}
+            <Link
+              href="/environment"
               className="text-[10px] text-mars-cyan hover:underline flex items-center gap-1"
             >
               <span>Full HUD</span>
               <ChevronRight className="w-3 h-3" />
-            </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -459,13 +459,13 @@ export const MissionControlDashboard: React.FC<MissionControlDashboardProps> = (
               <Shield className="w-4 h-4 text-emerald-400" />
               ACTIVE MARSWALK FLIGHT PLAN
             </span>
-            <button
-              onClick={() => onNavigateTab('routes')}
+            <Link
+              href="/routes"
               className="text-[10px] text-mars-orange hover:underline flex items-center gap-1"
             >
               <span>Optimizer</span>
               <ChevronRight className="w-3 h-3" />
-            </button>
+            </Link>
           </div>
 
           {activeRoute ? (
